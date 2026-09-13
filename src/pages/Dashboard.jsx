@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
     Activity, AlertCircle, CheckCircle2, Clock, Server, Stethoscope,
-    TrendingUp, Wrench, ShieldAlert, ShieldCheck, RefreshCw
+    TrendingUp, Wrench, ShieldAlert, ShieldCheck, RefreshCw, Sun, Moon, Sunrise, Sunset
 } from 'lucide-react';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -9,8 +9,10 @@ import {
 } from 'recharts';
 import api from '../services/api';
 import Skeleton from '../components/Skeleton';
+import { useAuth } from '../context/AuthContext';
 
 export default function Dashboard() {
+    const { user } = useAuth();
     const [summary, setSummary] = useState(null);
     const [recentCycles, setRecentCycles] = useState([]);
     const [monthlyData, setMonthlyData] = useState([]);
@@ -19,6 +21,34 @@ export default function Dashboard() {
     const [recentAlerts, setRecentAlerts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [lastRefresh, setLastRefresh] = useState(new Date());
+
+    const getGreeting = () => {
+        const hour = new Date().getHours();
+        if (hour >= 4 && hour < 12) {
+            return { 
+                text: 'Good morning', 
+                icon: <Sunrise className="h-6 w-6 text-amber-500 shrink-0" />
+            };
+        } else if (hour >= 12 && hour < 17) {
+            return { 
+                text: 'Good afternoon', 
+                icon: <Sun className="h-6 w-6 text-amber-500 shrink-0" />
+            };
+        } else if (hour >= 17 && hour < 21) {
+            return { 
+                text: 'Good evening', 
+                icon: <Sunset className="h-6 w-6 text-orange-500 shrink-0" />
+            };
+        } else {
+            return { 
+                text: 'Good night', 
+                icon: <Moon className="h-6 w-6 text-indigo-400 shrink-0" />
+            };
+        }
+    };
+
+    const userName = user?.full_name || user?.name || 'User';
+    const greeting = getGreeting();
 
     const fetchDashboardData = async () => {
         try {
@@ -85,17 +115,21 @@ export default function Dashboard() {
 
     return (
         <div className="space-y-6 pb-12">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Dashboard</h1>
-                    <p className="mt-1 text-sm text-slate-500">
-                        Real-time sterilization compliance and equipment health overview.
-                        <span className="ml-2 text-slate-400">Last updated: {lastRefresh.toLocaleTimeString()}</span>
+                    <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2 flex-wrap">
+                        <span>{greeting.text},</span>
+                        <span className="text-teal-600 font-extrabold">{userName}</span>
+                        <span className="inline-flex items-center ml-0.5">{greeting.icon}</span>
+                    </h1>
+                    <p className="mt-1 text-sm text-slate-500 flex items-center flex-wrap gap-x-2">
+                        <span>Real-time sterilization compliance and equipment health overview.</span>
+                        <span className="text-slate-400">• Last updated: {lastRefresh.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
                     </p>
                 </div>
                 <button onClick={fetchDashboardData}
-                    className="mt-3 sm:mt-0 inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-all">
-                    <RefreshCw className="h-3.5 w-3.5" /> Refresh
+                    className="inline-flex items-center gap-2 px-3.5 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-all shadow-sm cursor-pointer self-start sm:self-auto">
+                    <RefreshCw className="h-4 w-4 text-teal-600" /> Refresh Data
                 </button>
             </div>
 
