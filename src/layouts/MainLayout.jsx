@@ -15,17 +15,36 @@ import {
     LogOut,
     Menu,
     X,
-    Search,
     Plus,
     Check,
     CheckCheck,
     Info,
-    AlertCircle
+    AlertCircle,
+    Sun,
+    Moon,
+    ChevronRight,
+    Home
 } from 'lucide-react';
 import api from '../services/api';
+import ConfirmModal from '../components/ConfirmModal';
+import { useTheme } from '../context/ThemeContext';
+
+const routeLabels = {
+    'dashboard': 'Dashboard',
+    'equipment': 'Equipment Management',
+    'cycles': 'Sterilization Cycles',
+    'equipment-logs': 'Equipment Logs',
+    'maintenance': 'Maintenance',
+    'compliance': 'Compliance Monitoring',
+    'reports': 'Reports',
+    'notifications': 'Notifications Center',
+    'users': 'User Management',
+    'settings': 'Settings & Profile'
+};
 
 export default function MainLayout() {
     const { user, logout } = useAuth();
+    const { theme, toggleTheme } = useTheme();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
     const location = useLocation();
@@ -152,6 +171,49 @@ export default function MainLayout() {
         else if (userRole.includes('maintenance')) basePath = '/maintenance';
     }
 
+    const getBreadcrumbs = () => {
+        const paths = location.pathname.split('/').filter(Boolean);
+        if (paths.length === 0) {
+            return [{ label: 'Dashboard', path: `${basePath}/dashboard`, isLast: true }];
+        }
+
+        const rolePrefix = paths[0];
+        const subPaths = paths.slice(1);
+
+        if (subPaths.length === 0 || (subPaths.length === 1 && subPaths[0] === 'dashboard')) {
+            return [{ label: 'Dashboard', path: `/${rolePrefix}/dashboard`, isLast: true, isHome: true }];
+        }
+
+        const breadcrumbs = [
+            { label: 'Dashboard', path: `/${rolePrefix}/dashboard`, isHome: true }
+        ];
+
+        let accumulatedPath = `/${rolePrefix}`;
+        subPaths.forEach((segment, idx) => {
+            accumulatedPath += `/${segment}`;
+            const isLast = idx === subPaths.length - 1;
+            let label = routeLabels[segment];
+
+            if (!label) {
+                if (subPaths[idx - 1] === 'equipment') {
+                    label = 'Equipment Details';
+                } else if (subPaths[idx - 1] === 'cycles') {
+                    label = 'Cycle Details';
+                } else {
+                    label = segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, ' ');
+                }
+            }
+
+            breadcrumbs.push({
+                label,
+                path: accumulatedPath,
+                isLast
+            });
+        });
+
+        return breadcrumbs;
+    };
+
     const navigation = [
         { name: 'Dashboard', href: `${basePath}/dashboard`, icon: LayoutDashboard },
         { name: 'Equipment Management', href: `${basePath}/equipment`, icon: Stethoscope },
@@ -261,27 +323,50 @@ export default function MainLayout() {
             {/* Main content */}
             <div className="md:pl-64 flex flex-col flex-1 min-h-screen">
                 {/* Top Navigation Bar */}
-                <header className="sticky top-0 z-20 bg-white border-b border-slate-200 shadow-sm flex items-center justify-between px-4 sm:px-6 lg:px-8 py-3">
-                    <div className="flex items-center flex-1">
+                <header className="sticky top-0 z-20 bg-white border-b border-slate-200 shadow-sm flex items-center justify-between px-4 sm:px-6 lg:px-8 py-3.5">
+                    <div className="flex items-center flex-1 min-w-0 mr-4">
                         <button
                             type="button"
-                            className="md:hidden mr-4 p-2 rounded-md text-slate-500 hover:text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-teal-500 transition-colors"
+                            className="md:hidden mr-3 p-2 rounded-md text-slate-500 hover:text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-teal-500 transition-colors cursor-pointer"
                             onClick={() => setSidebarOpen(true)}
                         >
                             <Menu className="h-6 w-6" />
                         </button>
                         
-                        {/* System Search Bar */}
-                        <div className="hidden sm:flex max-w-md w-full relative">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <Search className="h-5 w-5 text-slate-400" />
-                            </div>
-                            <input
-                                type="text"
-                                className="block w-full pl-10 pr-3 py-2 border border-slate-200 rounded-lg leading-5 bg-slate-50 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 transition-colors sm:text-sm"
-                                placeholder="Search equipment, cycles, logs..."
-                            />
-                        </div>
+                        {/* Dynamic Breadcrumbs */}
+                        <nav className="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm text-slate-500 overflow-hidden" aria-label="Breadcrumb">
+                            {getBreadcrumbs().map((item, index, arr) => {
+                                if (arr.length === 1) {
+                                    return (
+                                        <div key={item.path} className="flex items-center gap-1.5 text-slate-900 font-semibold truncate">
+                                            <Home className="h-4 w-4 text-teal-600 shrink-0" />
+                                            <span className="truncate">{item.label}</span>
+                                        </div>
+                                    );
+                                }
+
+                                return (
+                                    <div key={item.path + index} className="flex items-center gap-1 sm:gap-2 shrink-0">
+                                        {index > 0 && (
+                                            <ChevronRight className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                                        )}
+                                        {item.isLast ? (
+                                            <span className="font-semibold text-slate-900 tracking-tight truncate max-w-[150px] sm:max-w-xs md:max-w-none">
+                                                {item.label}
+                                            </span>
+                                        ) : (
+                                            <Link
+                                                to={item.path}
+                                                className="text-slate-500 hover:text-teal-600 transition-colors flex items-center gap-1 font-medium hover:underline cursor-pointer"
+                                            >
+                                                {item.isHome && <Home className="h-3.5 w-3.5 shrink-0 text-slate-400" />}
+                                                <span className="hidden sm:inline">{item.label}</span>
+                                            </Link>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </nav>
                     </div>
                     
                     <div className="flex items-center gap-3 sm:gap-6">
@@ -300,6 +385,21 @@ export default function MainLayout() {
                                 Start Cycle
                             </button>
                         </div>
+                        {/* Theme Toggle Button */}
+                        <button 
+                            type="button"
+                            onClick={toggleTheme}
+                            className="p-2 rounded-xl text-slate-500 hover:text-teal-600 hover:bg-slate-100 transition-all focus:outline-none cursor-pointer flex items-center justify-center relative"
+                            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+                            aria-label="Toggle Theme"
+                        >
+                            {theme === 'dark' ? (
+                                <Sun className="h-5 w-5 text-amber-400 hover:rotate-45 transition-transform duration-300" />
+                            ) : (
+                                <Moon className="h-5 w-5 text-slate-600 hover:-rotate-12 transition-transform duration-300" />
+                            )}
+                        </button>
+
                         {/* Notifications Bell */}
                         <div className="relative" ref={notifDropdownRef}>
                             <button 
@@ -432,36 +532,17 @@ export default function MainLayout() {
             </div>
 
             {/* Logout Confirmation Modal */}
-            {isLogoutModalOpen && (
-                <>
-                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] transition-opacity" onClick={() => setIsLogoutModalOpen(false)}></div>
-                    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 pointer-events-none">
-                        <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm pointer-events-auto overflow-hidden">
-                            <div className="p-6">
-                                <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-rose-100 mb-4">
-                                    <LogOut className="h-6 w-6 text-rose-600" />
-                                </div>
-                                <h3 className="text-lg font-bold text-center text-slate-900 mb-2">Sign Out</h3>
-                                <p className="text-sm text-center text-slate-500 mb-6">Are you sure you want to sign out of your account?</p>
-                                <div className="flex flex-col gap-3">
-                                    <button 
-                                        onClick={confirmLogout}
-                                        className="w-full inline-flex justify-center items-center rounded-lg border border-transparent px-4 py-2 bg-rose-600 text-base font-medium text-white hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 shadow-sm transition-colors cursor-pointer"
-                                    >
-                                        Yes, Sign Out
-                                    </button>
-                                    <button 
-                                        onClick={() => setIsLogoutModalOpen(false)}
-                                        className="w-full inline-flex justify-center items-center rounded-lg border border-slate-300 px-4 py-2 bg-white text-base font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 shadow-sm transition-colors cursor-pointer"
-                                    >
-                                        Cancel
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </>
-            )}
+            <ConfirmModal
+                isOpen={isLogoutModalOpen}
+                onClose={() => setIsLogoutModalOpen(false)}
+                onConfirm={confirmLogout}
+                title="Sign Out"
+                message="Are you sure you want to sign out of your account?"
+                confirmText="Yes, Sign Out"
+                cancelText="Cancel"
+                type="danger"
+                icon={LogOut}
+            />
         </div>
     );
 }

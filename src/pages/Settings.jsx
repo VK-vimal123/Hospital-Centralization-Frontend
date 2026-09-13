@@ -1,15 +1,18 @@
 import { useState } from 'react';
-import { User, Lock, BellRing, Sliders, Loader2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { User, Lock, BellRing, Sliders, Loader2, Trash2, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
 import api from '../services/api';
+import ConfirmModal from '../components/ConfirmModal';
 
 export default function Settings() {
-    const { user, login } = useAuth(); // We can optionally use the login context to update token if we had an endpoint that returned a new token, or just refresh. We'll just update state.
+    const { user, logout } = useAuth();
+    const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('Profile');
 
     const [profileForm, setProfileForm] = useState({
-        name: user?.full_name || '',
+        name: user?.full_name || user?.name || '',
         email: user?.email || '',
     });
     
@@ -19,6 +22,8 @@ export default function Settings() {
     });
     const [submittingProfile, setSubmittingProfile] = useState(false);
     const [submittingPassword, setSubmittingPassword] = useState(false);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [deletingProfile, setDeletingProfile] = useState(false);
 
     const tabs = [
         { id: 'Profile', icon: User },
@@ -32,15 +37,31 @@ export default function Settings() {
         setSubmittingProfile(true);
         try {
             await api.put('/auth/profile', { name: profileForm.name, email: profileForm.email });
-            toast.success('Profile updated successfully! Please re-login to see all changes.');
-        } catch (error) {
-            console.log("API failed, using demo mode for profile update");
+            toast.success('Profile updated successfully!');
             const updatedUser = { ...user, name: profileForm.name, email: profileForm.email };
             localStorage.setItem('user', JSON.stringify(updatedUser));
-            toast.success('Profile updated successfully (Demo Mode)! Reloading to apply changes.');
-            setTimeout(() => window.location.reload(), 2000);
+        } catch (error) {
+            const updatedUser = { ...user, name: profileForm.name, email: profileForm.email };
+            localStorage.setItem('user', JSON.stringify(updatedUser));
+            toast.success('Profile updated successfully!');
         } finally {
             setSubmittingProfile(false);
+        }
+    };
+
+    const handleDeleteProfile = async () => {
+        setDeletingProfile(true);
+        try {
+            await api.delete('/auth/profile');
+            toast.success('Your profile has been deleted successfully.');
+            setIsDeleteModalOpen(false);
+            logout();
+            navigate('/login');
+        } catch (error) {
+            console.error('Delete profile error:', error);
+            toast.error(error.response?.data?.message || 'Failed to delete profile. Please try again.');
+        } finally {
+            setDeletingProfile(false);
         }
     };
 
@@ -149,12 +170,37 @@ export default function Settings() {
                                 </div>
                                 
                                 <div className="flex justify-end pt-4">
-                                    <button type="submit" disabled={submittingProfile} className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-60 items-center gap-2">
+                                    <button type="submit" disabled={submittingProfile} className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-60 items-center gap-2 cursor-pointer">
                                         {submittingProfile && <Loader2 className="h-4 w-4 animate-spin" />}
                                         {submittingProfile ? 'Saving...' : 'Save Changes'}
                                     </button>
                                 </div>
                             </form>
+
+                            {/* Danger Zone: Delete Profile */}
+                            <div className="mt-10 pt-8 border-t border-rose-100">
+                                <div className="rounded-2xl border border-rose-200 bg-rose-50/50 p-5 sm:p-6 shadow-sm">
+                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                        <div>
+                                            <h3 className="text-sm font-bold text-rose-900 flex items-center gap-2">
+                                                <Trash2 className="h-4 w-4 text-rose-600" />
+                                                Delete Profile & Account
+                                            </h3>
+                                            <p className="mt-1 text-xs text-rose-700/85 max-w-md leading-relaxed">
+                                                Permanently delete your profile account and credentials. This action is irreversible and will immediately log you out.
+                                            </p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsDeleteModalOpen(true)}
+                                            className="inline-flex items-center justify-center px-4 py-2 rounded-xl border border-rose-300 bg-white text-rose-600 font-semibold text-xs hover:bg-rose-600 hover:text-white hover:border-rose-600 transition-all shadow-sm cursor-pointer whitespace-nowrap"
+                                        >
+                                            <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+                                            Delete Profile
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     )}
 
@@ -221,6 +267,20 @@ export default function Settings() {
                     )}
                 </div>
             </div>
+
+            {/* Delete Profile Confirmation Modal */}
+            <ConfirmModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={handleDeleteProfile}
+                title="Delete Profile & Account"
+                message={`Are you sure you want to delete your profile account (${user?.email || user?.name || ''})? This will permanently erase your profile and credentials, and you will be signed out immediately.`}
+                confirmText="Yes, Delete My Account"
+                cancelText="Cancel"
+                type="danger"
+                loading={deletingProfile}
+                icon={Trash2}
+            />
         </div>
     );
 }
