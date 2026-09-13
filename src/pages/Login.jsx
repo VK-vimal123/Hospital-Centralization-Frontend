@@ -12,7 +12,7 @@ export default function Login() {
     const [role, setRole] = useState('Staff');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
-    const { login } = useAuth();
+    const { login, googleLogin } = useAuth();
     const navigate = useNavigate();
 
     const processLoginResult = (result) => {
@@ -32,25 +32,13 @@ export default function Login() {
         e.preventDefault();
         setError('');
         
-        let loginEmail = email;
-        if (role === 'Admin') loginEmail = 'admin_' + email;
-        else if (role === 'Technician') loginEmail = 'maint_' + email;
-
-        const result = await login(loginEmail, password);
+        const result = await login(email, password);
         processLoginResult(result);
     };
 
     const handleGoogleSuccess = async (credentialResponse) => {
         try {
-            const decoded = jwtDecode(credentialResponse.credential);
-            
-            // For Demo purposes, prefix email with role selected to route correctly
-            let loginEmail = decoded.email;
-            if (role === 'Admin') loginEmail = 'admin_' + decoded.email;
-            else if (role === 'Technician') loginEmail = 'maint_' + decoded.email;
-
-            // Trigger the demo mode login by sending the google email
-            const result = await login(loginEmail, 'google_oauth_dummy', decoded.picture);
+            const result = await googleLogin(credentialResponse.credential);
             processLoginResult(result);
         } catch (err) {
             setError('Failed to process Google Login');

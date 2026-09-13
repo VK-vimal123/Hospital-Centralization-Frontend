@@ -36,6 +36,22 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    const googleLogin = async (token) => {
+        try {
+            const { data } = await api.post('/auth/google', { token });
+            if (data.success) {
+                setUser(data.user);
+                localStorage.setItem('user', JSON.stringify(data.user));
+                localStorage.setItem('token', data.user.token);
+                return { success: true, user: data.user };
+            }
+            return { success: false, message: 'Invalid response format from server' };
+        } catch (error) {
+            console.error('Google login failed:', error);
+            return { success: false, message: error.response?.data?.message || 'Google Login failed' };
+        }
+    };
+
     const register = async (userData) => {
         try {
             const { data } = await api.post('/auth/register', userData);
@@ -58,7 +74,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, login, register, logout, loading }}>
+        <AuthContext.Provider value={{ user, login, googleLogin, register, logout, loading }}>
             {!loading && children}
         </AuthContext.Provider>
     );
