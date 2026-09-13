@@ -414,6 +414,19 @@ export default function Equipment() {
                     </div>
                 </div>
             )}
+
+            {/* Delete Confirmation Modal */}
+            <ConfirmModal
+                isOpen={!!deleteTarget}
+                onClose={() => setDeleteTarget(null)}
+                onConfirm={handleConfirmDelete}
+                title="Delete Equipment"
+                message={`Are you sure you want to delete "${deleteTarget?.name}" (${deleteTarget?.equipment_id || ''})? This action cannot be undone.`}
+                confirmText="Yes, Delete"
+                cancelText="Cancel"
+                type="danger"
+                loading={isDeleting}
+            />
         </div>
     );
 }
