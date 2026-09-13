@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import api from '../services/api';
 import { FaExclamationTriangle } from 'react-icons/fa';
+import { Loader2 } from 'lucide-react';
 
 export default function LogBIModal({ isOpen, onClose, onSuccess, cycleId }) {
     const [loading, setLoading] = useState(false);
@@ -148,12 +149,13 @@ export default function LogBIModal({ isOpen, onClose, onSuccess, cycleId }) {
                             <button 
                                 type="submit" 
                                 disabled={isSubmitDisabled}
-                                className={`w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 text-base font-medium text-white focus:outline-none sm:ml-3 sm:w-auto sm:text-sm ${
+                                className={`w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 text-base font-medium text-white focus:outline-none sm:ml-3 sm:w-auto sm:text-sm items-center gap-2 ${
                                     isSubmitDisabled 
                                         ? 'bg-blue-400 cursor-not-allowed opacity-70' 
                                         : 'bg-blue-600 hover:bg-blue-700'
                                 }`}
                             >
+                                {loading && <Loader2 className="h-4 w-4 animate-spin" />}
                                 {loading ? 'Saving...' : 'Save BI Result'}
                             </button>
                             <button 

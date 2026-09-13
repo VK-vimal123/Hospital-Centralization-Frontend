@@ -22,6 +22,7 @@ import {
 export default function MainLayout() {
     const { user, logout } = useAuth();
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
     const location = useLocation();
     const navigate = useNavigate();
     
@@ -50,7 +51,12 @@ export default function MainLayout() {
     };
 
     const handleLogout = () => {
+        setIsLogoutModalOpen(true);
+    };
+
+    const confirmLogout = () => {
         logout();
+        setIsLogoutModalOpen(false);
         navigate('/login');
     };
 
@@ -92,7 +98,7 @@ export default function MainLayout() {
                         </button>
                     </div>
                     <div className="flex-shrink-0 flex items-center px-6 text-white text-xl font-bold gap-3">
-                        <Activity className="text-teal-400 text-3xl"/> 
+                        <img src="/logo.png" alt="SterilManager Logo" className="h-8 w-8 object-contain" />
                         <span className="tracking-wide">SterilManager</span>
                     </div>
                     <div className="mt-8 flex-1 h-0 overflow-y-auto">
@@ -102,7 +108,7 @@ export default function MainLayout() {
                                     key={item.name}
                                     to={item.href}
                                     onClick={() => setSidebarOpen(false)}
-                                    className={`group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors ${
+                                    className={`group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors focus:outline-none ${
                                         location.pathname === item.href
                                             ? 'bg-teal-500/10 text-teal-400'
                                             : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
@@ -122,8 +128,8 @@ export default function MainLayout() {
                 <div className="flex-1 flex flex-col min-h-0 bg-slate-900 shadow-xl border-r border-slate-800">
                     <div className="flex-1 flex flex-col pt-6 pb-4 overflow-y-auto">
                         <div className="flex items-center flex-shrink-0 px-6 text-white text-xl font-bold gap-3 mb-6">
-                            <div className="p-2 bg-gradient-to-br from-teal-500 to-emerald-500 rounded-lg shadow-lg shadow-teal-500/20">
-                                <Activity className="text-white text-2xl"/> 
+                            <div className="p-shadow-lg">
+                                <img src="/logo.png" alt="SterilManager Logo" className="h-10 w-10 object-contain" />
                             </div>
                             <span className="tracking-wide">SterilManager</span>
                         </div>
@@ -132,7 +138,7 @@ export default function MainLayout() {
                                 <Link
                                     key={item.name}
                                     to={item.href}
-                                    className={`group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
+                                    className={`group flex focus:outline-none items-center px-3 py-2.5 text-[13px] font-medium rounded-lg transition-all duration-200 ${
                                         location.pathname === item.href
                                             ? 'bg-slate-800 text-teal-400 shadow-sm border border-slate-700/50'
                                             : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'
@@ -151,9 +157,7 @@ export default function MainLayout() {
                             {user?.picture ? (
                                 <img src={user.picture} alt="Profile" className="h-9 w-9 rounded-full object-cover shadow-md" />
                             ) : (
-                                <div className="h-9 w-9 rounded-full bg-gradient-to-br from-teal-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm shadow-md">
-                                    {user?.name?.charAt(0) || 'U'}
-                                </div>
+                                <img src="/profile.png" alt="Default Profile" className="h-9 w-9 rounded-full object-cover shadow-md bg-slate-800 p-0.5" />
                             )}
                             <div className="ml-3 flex-1 overflow-hidden">
                                 <p className="text-sm font-medium text-white truncate">{user?.name || 'User'}</p>
@@ -161,7 +165,7 @@ export default function MainLayout() {
                             </div>
                             <button 
                                 onClick={handleLogout}
-                                className="p-2 rounded-md text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition-colors"
+                                className="p-2 rounded-md text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition-colors cursor-pointer"
                                 title="Sign Out"
                             >
                                 <LogOut className="h-5 w-5" />
@@ -251,9 +255,7 @@ export default function MainLayout() {
                                 {user?.picture ? (
                                     <img src={user.picture} alt="Profile" className="h-8 w-8 rounded-full object-cover shadow-sm" />
                                 ) : (
-                                    <div className="h-8 w-8 rounded-full bg-gradient-to-br from-teal-500 to-blue-600 flex items-center justify-center text-white font-bold shadow-sm">
-                                        {user?.full_name?.charAt(0) || user?.name?.charAt(0) || 'U'}
-                                    </div>
+                                    <img src="/profile.png" alt="Default Profile" className="h-8 w-8 rounded-full object-cover shadow-sm bg-slate-200 p-0.5" />
                                 )}
                             </button>
                         </div>
@@ -266,6 +268,38 @@ export default function MainLayout() {
                     </div>
                 </main>
             </div>
+
+            {/* Logout Confirmation Modal */}
+            {isLogoutModalOpen && (
+                <>
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] transition-opacity" onClick={() => setIsLogoutModalOpen(false)}></div>
+                    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 pointer-events-none">
+                        <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm pointer-events-auto overflow-hidden">
+                            <div className="p-6">
+                                <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-rose-100 mb-4">
+                                    <LogOut className="h-6 w-6 text-rose-600" />
+                                </div>
+                                <h3 className="text-lg font-bold text-center text-slate-900 mb-2">Sign Out</h3>
+                                <p className="text-sm text-center text-slate-500 mb-6">Are you sure you want to sign out of your account?</p>
+                                <div className="flex flex-col gap-3">
+                                    <button 
+                                        onClick={confirmLogout}
+                                        className="w-full inline-flex justify-center items-center rounded-lg border border-transparent px-4 py-2 bg-rose-600 text-base font-medium text-white hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 shadow-sm transition-colors cursor-pointer"
+                                    >
+                                        Yes, Sign Out
+                                    </button>
+                                    <button 
+                                        onClick={() => setIsLogoutModalOpen(false)}
+                                        className="w-full inline-flex justify-center items-center rounded-lg border border-slate-300 px-4 py-2 bg-white text-base font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 shadow-sm transition-colors cursor-pointer"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </>
+            )}
         </div>
     );
 }

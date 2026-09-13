@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Stethoscope, Wrench, Activity, Clock, ShieldCheck, CheckCircle2, AlertCircle } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import api from '../services/api';
+import Skeleton from '../components/Skeleton';
 
 export default function EquipmentDetails() {
     const { id } = useParams();
@@ -43,7 +44,22 @@ export default function EquipmentDetails() {
         fetchDetails();
     }, [id]);
 
-    if (loading) return <div className="p-10 text-center text-slate-500">Loading details...</div>;
+    if (loading) {
+        return (
+            <div className="space-y-6 pb-12">
+                <div className="flex items-center gap-4">
+                    <Skeleton type="card" count={1} className="h-10 w-10" />
+                    <div><Skeleton type="text" count={2} /></div>
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="lg:col-span-1"><Skeleton type="card" count={1} className="h-[400px]" /></div>
+                    <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <Skeleton type="card" count={2} className="h-[300px]" />
+                    </div>
+                </div>
+            </div>
+        );
+    }
     if (!equipment) return <div className="p-10 text-center text-rose-500">Equipment not found!</div>;
 
     // Charts Data

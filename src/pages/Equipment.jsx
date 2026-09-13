@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Plus, Search, Filter, Edit, Eye, Trash2, Stethoscope, X, QrCode, Download, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Plus, Search, Filter, Edit, Eye, Trash2, Stethoscope, X, QrCode, Download, CheckCircle, AlertTriangle, Loader2 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import api from '../services/api';
+import Skeleton from '../components/Skeleton';
 
 export default function Equipment() {
     const [equipmentList, setEquipmentList] = useState([]);
@@ -211,7 +212,7 @@ export default function Equipment() {
                         </thead>
                         <tbody className="bg-white divide-y divide-slate-200">
                             {loading ? (
-                                <tr><td colSpan="5" className="px-3 py-6 text-center text-xs text-slate-500">Loading equipment...</td></tr>
+                                <tr><td colSpan="5" className="p-0"><Skeleton type="table" count={5} /></td></tr>
                             ) : filteredEquipment.length === 0 ? (
                                 <tr><td colSpan="5" className="px-3 py-6 text-center text-xs text-slate-500">
                                     {search || statusFilter !== 'All' ? 'No equipment matches your search.' : 'No equipment registered yet. Add your first equipment!'}
@@ -355,7 +356,8 @@ export default function Equipment() {
                                     Cancel
                                 </button>
                                 <button type="submit" disabled={submitting}
-                                    className="px-5 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 font-medium shadow-sm text-sm disabled:opacity-60">
+                                    className="px-5 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 font-medium shadow-sm text-sm disabled:opacity-60 flex items-center gap-2">
+                                    {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
                                     {submitting ? 'Saving...' : (editingId ? 'Update Equipment' : 'Add Equipment')}
                                 </button>
                             </div>

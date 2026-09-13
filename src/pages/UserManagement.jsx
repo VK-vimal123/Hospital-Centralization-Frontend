@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
-import { UserPlus, MoreVertical, Edit, Shield, UserX, X } from 'lucide-react';
+import { UserPlus, MoreVertical, Edit, Shield, UserX, X, Loader2 } from 'lucide-react';
 import api from '../services/api';
+import Skeleton from '../components/Skeleton';
 
 export default function UserManagement() {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
     const [showModal, setShowModal] = useState(false);
     
     const [formData, setFormData] = useState({
@@ -35,12 +37,15 @@ export default function UserManagement() {
 
     const handleAddUser = async (e) => {
         e.preventDefault();
+        setSubmitting(true);
         try {
             await api.post('/users', formData);
             setShowModal(false);
             fetchUsers();
         } catch (error) {
             console.error("Failed to create user", error);
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -81,7 +86,7 @@ export default function UserManagement() {
                         </thead>
                         <tbody className="bg-white divide-y divide-slate-200">
                             {loading ? (
-                                <tr><td colSpan="3" className="px-6 py-10 text-center text-slate-500">Loading users...</td></tr>
+                                <tr><td colSpan="3" className="p-0"><Skeleton type="table" count={5} /></td></tr>
                             ) : users.length === 0 ? (
                                 <tr><td colSpan="3" className="px-6 py-10 text-center text-slate-500">No users found.</td></tr>
                             ) : users.map((u) => (
@@ -149,7 +154,10 @@ export default function UserManagement() {
                                 </div>
                                 <div className="mt-6 flex gap-3 justify-end">
                                     <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 bg-white hover:bg-slate-50">Cancel</button>
-                                    <button type="submit" className="px-4 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-teal-600 hover:bg-teal-700">Create User</button>
+                                    <button type="submit" disabled={submitting} className="px-4 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 disabled:opacity-60 flex items-center gap-2">
+                                        {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                                        {submitting ? 'Creating...' : 'Create User'}
+                                    </button>
                                 </div>
                             </form>
                         </div>

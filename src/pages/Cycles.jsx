@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Activity, CheckCircle2, Clock, Filter, Play, Search, XCircle, X } from 'lucide-react';
+import { Activity, CheckCircle2, Clock, Filter, Play, Search, XCircle, X, Loader2 } from 'lucide-react';
 import api from '../services/api';
+import Skeleton from '../components/Skeleton';
+import { toast } from 'react-hot-toast';
 
 export default function Cycles() {
     const [activeTab, setActiveTab] = useState('All');
@@ -9,6 +11,7 @@ export default function Cycles() {
     const [equipmentList, setEquipmentList] = useState([]);
     const [profiles, setProfiles] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
     const [search, setSearch] = useState('');
 
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -62,6 +65,7 @@ export default function Cycles() {
 
     const handleRecordCycle = async (e) => {
         e.preventDefault();
+        setSubmitting(true);
         try {
             const { data } = await api.post('/cycles', formData);
             if (data.success || data.id) {
@@ -72,12 +76,17 @@ export default function Cycles() {
                     start_time: '', end_time: '', temperature: '', pressure: '', duration: '',
                     chemical_indicator: 'PASS', biological_indicator: 'PASS', notes: ''
                 });
-                alert(`Cycle Recorded! Result: ${data.result || 'PASS'}${data.failure_reason ? `\nReason: ${data.failure_reason}` : ''}`);
-                return;
+                if (data.result === 'FAIL') {
+                    toast.error(`Cycle Recorded! Result: FAIL\nReason: ${data.failure_reason || 'Unknown'}`, { duration: 5000 });
+                } else {
+                    toast.success(`Cycle Recorded! Result: ${data.result || 'PASS'}`);
+                }
             }
         } catch (error) {
             console.error('Failed to record cycle via API', error);
-            alert('Failed to record cycle. Please try again.');
+            toast.error('Failed to record cycle. Please try again.');
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -92,6 +101,21 @@ export default function Cycles() {
             c.operator_name?.toLowerCase().includes(search.toLowerCase())
         );
     });
+
+    const selectedProfile = profiles.find(p => (p._id || p.id).toString() === formData.profile_id);
+
+    const generateOptions = (min, max, defaultOpts) => {
+        if (min !== undefined && max !== undefined && min <= max) {
+            let opts = [];
+            for (let i = Math.floor(min); i <= Math.ceil(max); i++) {
+                opts.push(<option key={i} value={i}>{i}</option>);
+            }
+            return opts;
+        }
+        if (min !== undefined) return <option value={min}>{min}</option>;
+        if (max !== undefined) return <option value={max}>{max}</option>;
+        return defaultOpts.map(o => <option key={o} value={o}>{o}</option>);
+    };
 
     return (
         <div className="space-y-3 pb-6">
@@ -191,7 +215,7 @@ export default function Cycles() {
                         </thead>
                         <tbody className="bg-white divide-y divide-slate-200">
                             {loading ? (
-                                <tr><td colSpan="5" className="px-3 py-6 text-center text-xs text-slate-500">Loading cycles...</td></tr>
+                                <tr><td colSpan="5" className="p-0"><Skeleton type="table" count={5} /></td></tr>
                             ) : filteredCycles.length === 0 ? (
                                 <tr><td colSpan="5" className="px-3 py-6 text-center text-xs text-slate-500">No cycles found.</td></tr>
                             ) : filteredCycles.map((cycle) => (
@@ -327,18 +351,27 @@ export default function Cycles() {
                                     <div className="grid grid-cols-3 gap-3">
                                         <div>
                                             <label className="block text-xs font-medium text-slate-700 mb-1">Temp (°C)</label>
-                                            <input required type="number" step="0.1" className="w-full border border-slate-300 rounded-md px-2.5 py-1.5 text-sm focus:ring-1 focus:ring-teal-500 outline-none" 
-                                                value={formData.temperature} onChange={(e) => setFormData({...formData, temperature: e.target.value})} />
+                                            <select required className="w-full border border-slate-300 rounded-md px-2.5 py-1.5 text-sm focus:ring-1 focus:ring-teal-500 outline-none" 
+                                                value={formData.temperature} onChange={(e) => setFormData({...formData, temperature: e.target.value})}>
+                                                <option value="">Select Temp</option>
+                                                {generateOptions(selectedProfile?.minimum_temperature, selectedProfile?.maximum_temperature, [121, 132, 134])}
+                                            </select>
                                         </div>
                                         <div>
                                             <label className="block text-xs font-medium text-slate-700 mb-1">Press (PSI)</label>
-                                            <input required type="number" step="0.1" className="w-full border border-slate-300 rounded-md px-2.5 py-1.5 text-sm focus:ring-1 focus:ring-teal-500 outline-none" 
-                                                value={formData.pressure} onChange={(e) => setFormData({...formData, pressure: e.target.value})} />
+                                            <select required className="w-full border border-slate-300 rounded-md px-2.5 py-1.5 text-sm focus:ring-1 focus:ring-teal-500 outline-none" 
+                                                value={formData.pressure} onChange={(e) => setFormData({...formData, pressure: e.target.value})}>
+                                                <option value="">Select Pressure</option>
+                                                {generateOptions(selectedProfile?.pressure_min, selectedProfile?.pressure_max, [15, 27, 30])}
+                                            </select>
                                         </div>
                                         <div>
                                             <label className="block text-xs font-medium text-slate-700 mb-1">Duration (Min)</label>
-                                            <input required type="number" className="w-full border border-slate-300 rounded-md px-2.5 py-1.5 text-sm focus:ring-1 focus:ring-teal-500 outline-none" 
-                                                value={formData.duration} onChange={(e) => setFormData({...formData, duration: e.target.value})} />
+                                            <select required className="w-full border border-slate-300 rounded-md px-2.5 py-1.5 text-sm focus:ring-1 focus:ring-teal-500 outline-none" 
+                                                value={formData.duration} onChange={(e) => setFormData({...formData, duration: e.target.value})}>
+                                                <option value="">Select Duration</option>
+                                                {generateOptions(selectedProfile?.minimum_duration, selectedProfile?.minimum_duration ? selectedProfile.minimum_duration + 30 : undefined, [4, 15, 30, 45])}
+                                            </select>
                                         </div>
                                     </div>
                                 </div>
@@ -373,8 +406,9 @@ export default function Cycles() {
 
                                 <div className="flex justify-end gap-2 pt-2">
                                     <button type="button" onClick={() => setIsAddModalOpen(false)} className="px-3 py-1.5 border border-slate-300 rounded-md text-slate-700 hover:bg-slate-50 text-sm font-medium">Cancel</button>
-                                    <button type="submit" className="px-3 py-1.5 bg-teal-600 text-white rounded-md hover:bg-teal-700 text-sm font-medium shadow-sm flex items-center gap-2">
-                                        <Activity className="h-4 w-4" /> Save Cycle
+                                    <button type="submit" disabled={submitting} className="px-3 py-1.5 bg-teal-600 text-white rounded-md hover:bg-teal-700 text-sm font-medium shadow-sm flex items-center gap-2 disabled:opacity-60">
+                                        {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Activity className="h-4 w-4" />}
+                                        {submitting ? 'Saving...' : 'Save Cycle'}
                                     </button>
                                 </div>
                             </form>

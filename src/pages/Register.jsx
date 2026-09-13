@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { FaHospital } from 'react-icons/fa';
+import { Loader2 } from 'lucide-react';
 
 export default function Register() {
     const [name, setName] = useState('');
@@ -9,17 +10,23 @@ export default function Register() {
     const [password, setPassword] = useState('');
     const [role, setRole] = useState('Sterilization Staff');
     const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
     const { register } = useAuth();
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
-        const result = await register({ name, email, password, role });
-        if (result.success) {
-            navigate('/dashboard');
-        } else {
-            setError(result.message || 'Registration failed. Please try again.');
+        setIsLoading(true);
+        try {
+            const result = await register({ name, email, password, role });
+            if (result.success) {
+                navigate('/dashboard');
+            } else {
+                setError(result.message || 'Registration failed. Please try again.');
+            }
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -27,14 +34,10 @@ export default function Register() {
         <div className="min-h-screen flex w-full bg-white font-sans text-gray-800 p-2 sm:p-4 lg:p-6 items-center justify-center bg-gray-50">
             <div className="w-full max-w-md bg-white border border-gray-100 shadow-xl rounded-xl p-8 sm:p-10 relative">
                 <div className="flex items-center justify-center mb-8">
-                    <div className="flex items-center space-x-3">
-                        <div className="text-teal-600 bg-teal-50 p-2 rounded-lg">
-                            <FaHospital className="text-3xl" />
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="text-xl font-bold text-gray-900 leading-tight tracking-tight">Hospital Sterilization</span>
-                            <span className="text-xs text-gray-500 font-medium">Unit Cycle Compliance Portal</span>
-                        </div>
+                    <div className="flex flex-col items-center">
+                        <img src="/logo.png" alt="SterilManager Logo" className="h-16 w-16 object-contain mb-4" />
+                        <span className="text-2xl font-bold text-gray-900 leading-tight tracking-tight text-center">Hospital Sterilization</span>
+                        <span className="text-sm text-gray-500 font-medium text-center">Unit Cycle Compliance Portal</span>
                     </div>
                 </div>
 
@@ -93,9 +96,11 @@ export default function Register() {
 
                     <button
                         type="submit"
-                        className="w-full bg-teal-600 hover:bg-teal-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-300 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
+                        disabled={isLoading}
+                        className="w-full bg-teal-600 hover:bg-teal-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-300 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-60 flex items-center justify-center gap-2"
                     >
-                        Register
+                        {isLoading && <Loader2 className="h-5 w-5 animate-spin" />}
+                        {isLoading ? 'Registering...' : 'Register'}
                     </button>
                 </form>
                 <p className="mt-6 text-center text-sm text-gray-500">

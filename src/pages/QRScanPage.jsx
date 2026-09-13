@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Stethoscope, CheckCircle2, AlertTriangle, XCircle, Activity, Wrench, Calendar, MapPin, Tag, Hash, ArrowLeft, ShieldCheck } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import api from '../services/api';
+import Skeleton from '../components/Skeleton';
 
 export default function QRScanPage() {
     const { equipment_id } = useParams();
@@ -52,10 +53,10 @@ export default function QRScanPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50 flex items-center justify-center">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
-                    <p className="text-slate-600 font-medium">Loading equipment details...</p>
+            <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50 flex items-center justify-center p-4">
+                <div className="w-full max-w-md bg-white rounded-2xl shadow-lg border border-slate-200 p-6">
+                    <Skeleton type="card" count={1} className="h-64 mb-4" />
+                    <Skeleton type="text" count={3} />
                 </div>
             </div>
         );

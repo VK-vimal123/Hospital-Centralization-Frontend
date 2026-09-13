@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Check, AlertCircle, Wrench, Info, X, Bell, ShieldCheck, CheckCircle2, RefreshCw } from 'lucide-react';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import Skeleton from '../components/Skeleton';
 
 export default function Notifications() {
     const { user } = useAuth();
@@ -129,10 +130,7 @@ export default function Notifications() {
 
             <div className="space-y-3">
                 {loading ? (
-                    <div className="p-10 text-center text-slate-500 bg-white rounded-xl shadow-sm border border-slate-200">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600 mx-auto mb-3"></div>
-                        Loading notifications...
-                    </div>
+                    <Skeleton type="text" count={6} className="space-y-4" />
                 ) : filteredNotifications.length === 0 ? (
                     <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-12 flex flex-col items-center justify-center text-center">
                         <div className="h-16 w-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">

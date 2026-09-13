@@ -4,6 +4,7 @@ import {
     Calendar, AlertCircle, RefreshCw, TrendingUp, Target, Award, BarChart2
 } from 'lucide-react';
 import api from '../services/api';
+import Skeleton from '../components/Skeleton';
 
 export default function Compliance() {
     const [summary, setSummary] = useState(null);
@@ -59,8 +60,9 @@ export default function Compliance() {
             </div>
 
             {loading ? (
-                <div className="flex items-center justify-center h-48">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
+                <div className="space-y-6">
+                    <Skeleton type="card" count={1} className="h-48 w-full" />
+                    <Skeleton type="table" count={5} className="mt-8" />
                 </div>
             ) : (
                 <>

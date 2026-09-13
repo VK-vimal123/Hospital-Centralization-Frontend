@@ -1,5 +1,6 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import { useAuth } from './context/AuthContext';
 
 import Login from './pages/Login';
@@ -53,6 +54,7 @@ const standardRoutes = [
 export default function App() {
     return (
         <ErrorBoundary>
+            <Toaster position="top-right" />
             <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />

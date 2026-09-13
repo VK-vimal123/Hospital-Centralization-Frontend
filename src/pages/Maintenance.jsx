@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Calendar, CheckCircle2, Clock, Wrench, Plus, X } from 'lucide-react';
+import { Calendar, CheckCircle2, Clock, Wrench, Plus, X, Loader2 } from 'lucide-react';
 import api from '../services/api';
+import Skeleton from '../components/Skeleton';
 
 export default function Maintenance() {
     const [schedules, setSchedules] = useState([]);
     const [equipmentList, setEquipmentList] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [formData, setFormData] = useState({
         equipment_id: '', maintenance_type: 'Preventive', service_date: '', 
@@ -41,6 +43,7 @@ export default function Maintenance() {
 
     const handleSchedule = async (e) => {
         e.preventDefault();
+        setSubmitting(true);
         try {
             const res = await api.post('/maintenance', formData);
             if (res.data.success) {
@@ -53,6 +56,8 @@ export default function Maintenance() {
             }
         } catch (error) {
             console.error("Failed to schedule maintenance", error);
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -81,7 +86,11 @@ export default function Maintenance() {
             </div>
 
             {loading ? (
-                <div className="text-center py-10 text-slate-500">Loading maintenance records...</div>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 py-4">
+                    <Skeleton type="card" count={1} className="h-[400px]" />
+                    <Skeleton type="card" count={1} className="h-[400px]" />
+                    <Skeleton type="card" count={1} className="h-[400px]" />
+                </div>
             ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Scheduled / In Progress */}
@@ -229,7 +238,10 @@ export default function Maintenance() {
                             </div>
                             <div className="mt-8 flex justify-end gap-3 pt-4 border-t border-slate-100">
                                 <button type="button" onClick={() => setIsAddModalOpen(false)} className="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50 font-medium">Cancel</button>
-                                <button type="submit" className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 font-medium shadow-sm">Save Schedule</button>
+                                <button type="submit" disabled={submitting} className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 font-medium shadow-sm flex items-center gap-2 disabled:opacity-60">
+                                    {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                                    {submitting ? 'Saving...' : 'Save Schedule'}
+                                </button>
                             </div>
                         </form>
                     </div>

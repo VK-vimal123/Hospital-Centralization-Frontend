@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Activity } from 'lucide-react';
+import { Activity, Loader2 } from 'lucide-react';
 import { FiEye, FiEyeOff } from 'react-icons/fi';
 import { GoogleLogin } from '@react-oauth/google';
 import { jwtDecode } from 'jwt-decode';
@@ -12,6 +12,7 @@ export default function Login() {
     const [role, setRole] = useState('Staff');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
     const { login, googleLogin } = useAuth();
     const navigate = useNavigate();
 
@@ -31,9 +32,14 @@ export default function Login() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
+        setIsLoading(true);
         
-        const result = await login(email, password);
-        processLoginResult(result);
+        try {
+            const result = await login(email, password);
+            processLoginResult(result);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleGoogleSuccess = async (credentialResponse) => {
@@ -51,8 +57,8 @@ export default function Login() {
                 
                 {/* Logo and Header */}
                 <div className="flex flex-col items-center justify-center mb-8">
-                    <div className="p-3 bg-gradient-to-br from-teal-500 to-emerald-500 rounded-xl shadow-lg shadow-teal-500/20 mb-4">
-                        <Activity className="text-white text-3xl" />
+                    <div className="mb-4">
+                        <img src="/logo.png" alt="SterilManager Logo" className="h-16 w-16 object-contain" />
                     </div>
                     <h1 className="text-2xl font-bold text-slate-900 tracking-tight">SterilManager</h1>
                     <p className="text-slate-500 text-sm mt-1">Sign in to your account</p>
@@ -120,9 +126,11 @@ export default function Login() {
 
                     <button
                         type="submit"
-                        className="w-full bg-teal-600 hover:bg-teal-700 text-white font-medium py-2.5 px-4 rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
+                        disabled={isLoading}
+                        className="w-full bg-teal-600 hover:bg-teal-700 text-white font-medium py-2.5 px-4 rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-60 flex items-center justify-center gap-2"
                     >
-                        Sign In
+                        {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+                        {isLoading ? 'Signing In...' : 'Sign In'}
                     </button>
                     
                     <div className="mt-6 flex items-center justify-center">

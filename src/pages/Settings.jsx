@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { User, Lock, BellRing, Sliders } from 'lucide-react';
+import { User, Lock, BellRing, Sliders, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { toast } from 'react-hot-toast';
 import api from '../services/api';
 
 export default function Settings() {
@@ -16,6 +17,8 @@ export default function Settings() {
         password: '',
         confirmPassword: ''
     });
+    const [submittingProfile, setSubmittingProfile] = useState(false);
+    const [submittingPassword, setSubmittingPassword] = useState(false);
 
     const tabs = [
         { id: 'Profile', icon: User },
@@ -26,31 +29,37 @@ export default function Settings() {
 
     const handleUpdateProfile = async (e) => {
         e.preventDefault();
+        setSubmittingProfile(true);
         try {
             await api.put('/auth/profile', { name: profileForm.name, email: profileForm.email });
-            alert('Profile updated successfully! Please re-login to see all changes.');
+            toast.success('Profile updated successfully! Please re-login to see all changes.');
         } catch (error) {
             console.log("API failed, using demo mode for profile update");
             const updatedUser = { ...user, name: profileForm.name, email: profileForm.email };
             localStorage.setItem('user', JSON.stringify(updatedUser));
-            alert('Profile updated successfully (Demo Mode)! Reloading to apply changes.');
-            window.location.reload();
+            toast.success('Profile updated successfully (Demo Mode)! Reloading to apply changes.');
+            setTimeout(() => window.location.reload(), 2000);
+        } finally {
+            setSubmittingProfile(false);
         }
     };
 
     const handleUpdatePassword = async (e) => {
         e.preventDefault();
         if (passwordForm.password !== passwordForm.confirmPassword) {
-            return alert("Passwords don't match!");
+            return toast.error("Passwords don't match!");
         }
+        setSubmittingPassword(true);
         try {
             await api.put('/auth/profile', { name: profileForm.name, email: profileForm.email, password: passwordForm.password });
-            alert('Password updated successfully!');
+            toast.success('Password updated successfully!');
             setPasswordForm({ password: '', confirmPassword: '' });
         } catch (error) {
             console.log("API failed, using demo mode for password update");
-            alert('Password updated successfully (Demo Mode)!');
+            toast.success('Password updated successfully (Demo Mode)!');
             setPasswordForm({ password: '', confirmPassword: '' });
+        } finally {
+            setSubmittingPassword(false);
         }
     };
 
@@ -62,8 +71,8 @@ export default function Settings() {
                 const base64String = reader.result;
                 const updatedUser = { ...user, picture: base64String };
                 localStorage.setItem('user', JSON.stringify(updatedUser));
-                alert('Avatar updated (Demo Mode)! Reloading to apply changes.');
-                window.location.reload();
+                toast.success('Avatar updated (Demo Mode)! Reloading to apply changes.');
+                setTimeout(() => window.location.reload(), 2000);
             };
             reader.readAsDataURL(file);
         }
@@ -112,7 +121,7 @@ export default function Settings() {
                                     {user?.picture ? (
                                         <img src={user.picture} alt="Avatar" className="h-full w-full object-cover" />
                                     ) : (
-                                        (user?.full_name || user?.name || 'U').charAt(0)
+                                        <img src="/profile.png" alt="Default Avatar" className="h-full w-full object-cover bg-white" />
                                     )}
                                 </div>
                                 <div className="ml-5">
@@ -140,8 +149,9 @@ export default function Settings() {
                                 </div>
                                 
                                 <div className="flex justify-end pt-4">
-                                    <button type="submit" className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500">
-                                        Save Changes
+                                    <button type="submit" disabled={submittingProfile} className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-60 items-center gap-2">
+                                        {submittingProfile && <Loader2 className="h-4 w-4 animate-spin" />}
+                                        {submittingProfile ? 'Saving...' : 'Save Changes'}
                                     </button>
                                 </div>
                             </form>
@@ -161,8 +171,9 @@ export default function Settings() {
                                     <input type="password" required minLength={6} value={passwordForm.confirmPassword} onChange={e => setPasswordForm({...passwordForm, confirmPassword: e.target.value})} className="mt-1 block w-full border border-slate-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm" />
                                 </div>
                                 <div className="flex justify-end pt-4">
-                                    <button type="submit" className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500">
-                                        Update Password
+                                    <button type="submit" disabled={submittingPassword} className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-60 items-center gap-2">
+                                        {submittingPassword && <Loader2 className="h-4 w-4 animate-spin" />}
+                                        {submittingPassword ? 'Updating...' : 'Update Password'}
                                     </button>
                                 </div>
                             </form>

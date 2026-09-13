@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Calendar, Filter, Search, Activity, Wrench, AlertTriangle, User } from 'lucide-react';
 import api from '../services/api';
+import Skeleton from '../components/Skeleton';
 
 export default function EquipmentLogs() {
     const [logs, setLogs] = useState([]);
@@ -85,7 +86,7 @@ export default function EquipmentLogs() {
                     <div className="flow-root">
                         <ul role="list" className="divide-y divide-slate-100">
                             {loading ? (
-                                <li className="p-10 text-center text-slate-500">Loading audit logs...</li>
+                                <div className="p-4"><Skeleton type="text" count={5} className="space-y-4" /></div>
                             ) : filteredLogs.length === 0 ? (
                                 <li className="p-10 text-center text-slate-500">No logs found.</li>
                             ) : filteredLogs.map((log) => (

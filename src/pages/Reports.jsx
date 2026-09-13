@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { BarChart3, Download, FileText } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import api from '../services/api';
+import Skeleton from '../components/Skeleton';
 
 export default function Reports() {
     const [cycles, setCycles] = useState([]);
@@ -95,7 +96,7 @@ export default function Reports() {
                     
                     <div className="p-6 flex-1 bg-slate-50/50">
                         {loading ? (
-                            <div className="h-64 flex items-center justify-center text-slate-500">Loading chart data...</div>
+                            <Skeleton type="card" count={1} className="h-[400px] w-full" />
                         ) : activeReport === 'daily' ? (
                             <div className="h-[400px] w-full bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
                                 <ResponsiveContainer width="100%" height="100%">

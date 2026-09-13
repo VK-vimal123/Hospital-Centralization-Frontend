@@ -8,6 +8,7 @@ import {
     BarChart, Bar, Legend, PieChart, Pie, Cell
 } from 'recharts';
 import api from '../services/api';
+import Skeleton from '../components/Skeleton';
 
 export default function Dashboard() {
     const [summary, setSummary] = useState(null);
@@ -50,10 +51,18 @@ export default function Dashboard() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-64">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-teal-600 mx-auto mb-3"></div>
-                    <p className="text-slate-500 text-sm">Loading dashboard...</p>
+            <div className="space-y-6 pb-12">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Dashboard</h1>
+                    </div>
+                </div>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <Skeleton type="card" count={8} />
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                    <Skeleton type="card" count={1} className="h-[280px]" />
+                    <Skeleton type="card" count={1} className="h-[280px]" />
                 </div>
             </div>
         );
