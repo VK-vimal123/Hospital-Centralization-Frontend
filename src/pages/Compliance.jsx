@@ -20,7 +20,7 @@ export default function Compliance() {
                 api.get('/audit-logs').catch(() => ({ data: null }))
             ]);
 
-            if (summaryRes.data?.success) setSummary(summaryRes.data);
+            if (summaryRes.data?.success) setSummary(summaryRes.data.data);
             if (eqCompRes.data?.success) setEquipmentCompliance(eqCompRes.data.data || []);
             if (logsRes.data?.success) setAuditLogs(logsRes.data.data?.slice(0, 8) || []);
         } catch (error) {

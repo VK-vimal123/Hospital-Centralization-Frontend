@@ -27,7 +27,7 @@ export default function Cycles() {
                 api.get('/compliance/profiles').catch(() => ({ data: null }))
             ]);
             
-            if (cyclesRes.data) setCycles(cyclesRes.data);
+            if (cyclesRes.data?.success) setCycles(cyclesRes.data.data);
             else {
                 const demoCycles = localStorage.getItem('demo_cycles');
                 setCycles(demoCycles ? JSON.parse(demoCycles) : []);

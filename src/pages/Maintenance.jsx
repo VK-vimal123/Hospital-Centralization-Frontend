@@ -21,7 +21,7 @@ export default function Maintenance() {
             ]);
             
             // Check if we got real data from the API
-            let fetchedSchedules = maintRes.data || [];
+            let fetchedSchedules = maintRes.data?.data || maintRes.data || [];
             let fetchedEquipment = eqRes.data?.data || [];
 
             // If empty (because API is down and returned our catch fallbacks), use localStorage
