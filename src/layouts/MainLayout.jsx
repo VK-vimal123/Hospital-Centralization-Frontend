@@ -32,7 +32,7 @@ export default function MainLayout() {
         if (user) {
             import('../services/api').then(apiModule => {
                 const api = apiModule.default;
-                api.get('/notifications').then(res => setNotifications(res.data)).catch(console.error);
+                api.get('/notifications').then(res => setNotifications(res.data.data || [])).catch(console.error);
             });
         }
     }, [user]);
