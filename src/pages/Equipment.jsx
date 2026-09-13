@@ -2,8 +2,10 @@ import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Plus, Search, Filter, Edit, Eye, Trash2, Stethoscope, X, QrCode, Download, CheckCircle, AlertTriangle, Loader2 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
+import toast from 'react-hot-toast';
 import api from '../services/api';
 import Skeleton from '../components/Skeleton';
+import ConfirmModal from '../components/ConfirmModal';
 
 export default function Equipment() {
     const [equipmentList, setEquipmentList] = useState([]);
@@ -14,7 +16,8 @@ export default function Equipment() {
     const [isQRModalOpen, setIsQRModalOpen] = useState(false);
     const [selectedQR, setSelectedQR] = useState(null);
     const [submitting, setSubmitting] = useState(false);
-    const [toast, setToast] = useState(null);
+    const [deleteTarget, setDeleteTarget] = useState(null);
+    const [isDeleting, setIsDeleting] = useState(false);
     const [formData, setFormData] = useState({
         equipment_id: '', name: '', category: '', manufacturer: '', model: '',
         serial_number: '', location: '', status: 'Active',
@@ -25,11 +28,6 @@ export default function Equipment() {
     const location = useLocation();
     const navigate = useNavigate();
 
-    const showToast = (msg, type = 'success') => {
-        setToast({ msg, type });
-        setTimeout(() => setToast(null), 3500);
-    };
-
     const fetchEquipment = async () => {
         try {
             setLoading(true);
@@ -39,7 +37,7 @@ export default function Equipment() {
             }
         } catch (error) {
             console.error('Failed to fetch equipment:', error);
-            showToast('Failed to load equipment. Check backend connection.', 'error');
+            toast.error('Failed to load equipment. Check backend connection.');
         } finally {
             setLoading(false);
         }
@@ -69,30 +67,40 @@ export default function Equipment() {
         try {
             if (editingId) {
                 await api.put(`/equipment/${editingId}`, formData);
-                showToast('Equipment updated successfully!');
+                toast.success('Equipment updated successfully!');
             } else {
                 await api.post('/equipment', formData);
-                showToast('Equipment added successfully!');
+                toast.success('Equipment added! Notification created.');
             }
+            window.dispatchEvent(new CustomEvent('notification-refresh'));
             setIsAddModalOpen(false);
             resetForm();
             fetchEquipment();
         } catch (error) {
             const msg = error.response?.data?.message || 'Operation failed. Please try again.';
-            showToast(msg, 'error');
+            toast.error(msg);
         } finally {
             setSubmitting(false);
         }
     };
 
-    const handleDelete = async (id, name) => {
-        if (!window.confirm(`Are you sure you want to delete "${name}"? This action cannot be undone.`)) return;
+    const handleDeleteClick = (eq) => {
+        setDeleteTarget(eq);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!deleteTarget) return;
+        setIsDeleting(true);
         try {
-            await api.delete(`/equipment/${id}`);
-            showToast('Equipment deleted successfully.');
-            setEquipmentList(prev => prev.filter(eq => eq.id !== id));
+            await api.delete(`/equipment/${deleteTarget.id}`);
+            toast.success(`Equipment "${deleteTarget.name}" deleted successfully.`);
+            setEquipmentList(prev => prev.filter(eq => eq.id !== deleteTarget.id));
+            window.dispatchEvent(new CustomEvent('notification-refresh'));
+            setDeleteTarget(null);
         } catch (error) {
-            showToast(error.response?.data?.message || 'Delete failed.', 'error');
+            toast.error(error.response?.data?.message || 'Delete failed.');
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -256,7 +264,7 @@ export default function Equipment() {
                                             <button onClick={() => openEditModal(eq)} className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors" title="Edit">
                                                 <Edit className="h-3.5 w-3.5" />
                                             </button>
-                                            <button onClick={() => handleDelete(eq.id, eq.name)} className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors" title="Delete">
+                                            <button onClick={() => handleDeleteClick(eq)} className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors cursor-pointer" title="Delete">
                                                 <Trash2 className="h-3.5 w-3.5" />
                                             </button>
                                         </div>

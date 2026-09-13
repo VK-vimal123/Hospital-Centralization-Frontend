@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
@@ -16,8 +16,13 @@ import {
     Menu,
     X,
     Search,
-    Plus
+    Plus,
+    Check,
+    CheckCheck,
+    Info,
+    AlertCircle
 } from 'lucide-react';
+import api from '../services/api';
 
 export default function MainLayout() {
     const { user, logout } = useAuth();
@@ -28,26 +33,104 @@ export default function MainLayout() {
     
     const [notifications, setNotifications] = useState([]);
     const [showNotifications, setShowNotifications] = useState(false);
+    const notifDropdownRef = useRef(null);
     
-    useEffect(() => {
-        if (user) {
-            import('../services/api').then(apiModule => {
-                const api = apiModule.default;
-                api.get('/notifications').then(res => setNotifications(res.data.data || [])).catch(console.error);
-            });
+    const fetchNotifications = useCallback(async () => {
+        if (!user) return;
+        try {
+            const res = await api.get('/notifications');
+            if (res.data?.success && Array.isArray(res.data.data)) {
+                setNotifications(res.data.data);
+            }
+        } catch (error) {
+            console.error('Failed to fetch notifications:', error);
         }
     }, [user]);
 
+    useEffect(() => {
+        fetchNotifications();
+
+        const handleRefresh = () => {
+            fetchNotifications();
+        };
+
+        window.addEventListener('notification-refresh', handleRefresh);
+        const interval = setInterval(fetchNotifications, 15000);
+
+        return () => {
+            window.removeEventListener('notification-refresh', handleRefresh);
+            clearInterval(interval);
+        };
+    }, [fetchNotifications]);
+
+    // Close notifications dropdown on click outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (notifDropdownRef.current && !notifDropdownRef.current.contains(event.target)) {
+                setShowNotifications(false);
+            }
+        };
+
+        if (showNotifications) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [showNotifications]);
+
     const unreadCount = notifications.filter(n => !n.is_read).length;
 
-    const handleMarkAsRead = async (id) => {
+    const handleMarkAsRead = async (id, e) => {
+        if (e) e.stopPropagation();
         try {
-            const api = (await import('../services/api')).default;
+            setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
             await api.put(`/notifications/${id}/read`);
-            setNotifications(notifications.map(n => n.id === id ? { ...n, is_read: true } : n));
         } catch (error) {
-            console.error(error);
+            console.error('Failed to mark notification as read:', error);
         }
+    };
+
+    const handleMarkAllAsRead = async (e) => {
+        if (e) e.stopPropagation();
+        try {
+            setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+            await api.put('/notifications/mark-all-read');
+        } catch (error) {
+            console.error('Failed to mark all as read:', error);
+        }
+    };
+
+    const getRelativeTime = (timestamp) => {
+        if (!timestamp) return 'Just now';
+        const diff = Date.now() - new Date(timestamp).getTime();
+        const mins = Math.floor(diff / 60000);
+        if (mins < 1) return 'Just now';
+        if (mins < 60) return `${mins}m ago`;
+        const hours = Math.floor(mins / 60);
+        if (hours < 24) return `${hours}h ago`;
+        const days = Math.floor(hours / 24);
+        if (days === 1) return 'Yesterday';
+        if (days < 7) return `${days}d ago`;
+        return new Date(timestamp).toLocaleDateString();
+    };
+
+    const getNotificationIcon = (notif) => {
+        const title = (notif.title || '').toLowerCase();
+        const type = (notif.type || '').toLowerCase();
+        if (title.includes('equipment') || type.includes('equipment')) {
+            return <div className="p-2 rounded-lg bg-teal-50 text-teal-600 shrink-0"><Stethoscope className="h-4 w-4" /></div>;
+        }
+        if (title.includes('cycle') || title.includes('steriliz') || type.includes('cycle')) {
+            return <div className="p-2 rounded-lg bg-emerald-50 text-emerald-600 shrink-0"><Activity className="h-4 w-4" /></div>;
+        }
+        if (title.includes('maintenance') || type.includes('warning')) {
+            return <div className="p-2 rounded-lg bg-amber-50 text-amber-600 shrink-0"><Wrench className="h-4 w-4" /></div>;
+        }
+        if (type.includes('critical') || title.includes('overdue') || title.includes('alert')) {
+            return <div className="p-2 rounded-lg bg-rose-50 text-rose-600 shrink-0"><AlertCircle className="h-4 w-4" /></div>;
+        }
+        return <div className="p-2 rounded-lg bg-sky-50 text-sky-600 shrink-0"><Bell className="h-4 w-4" /></div>;
     };
 
     const handleLogout = () => {
@@ -218,34 +301,113 @@ export default function MainLayout() {
                             </button>
                         </div>
                         {/* Notifications Bell */}
-                        <div className="relative">
-                            <button onClick={() => setShowNotifications(!showNotifications)} className="relative p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors focus:outline-none">
+                        <div className="relative" ref={notifDropdownRef}>
+                            <button 
+                                onClick={() => setShowNotifications(!showNotifications)} 
+                                className="relative p-2 rounded-xl text-slate-500 hover:text-teal-600 hover:bg-slate-100 transition-all focus:outline-none cursor-pointer"
+                                title="Notifications"
+                            >
                                 <span className="sr-only">View notifications</span>
-                                <Bell className="h-6 w-6" />
-                                {unreadCount > 0 && <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white ring-2 ring-white">{unreadCount}</span>}
+                                <Bell className="h-5 w-5" />
+                                {unreadCount > 0 && (
+                                    <span className="absolute -top-1 -right-1 flex h-5 min-w-[20px] px-1 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white shadow-sm ring-2 ring-white animate-pulse">
+                                        {unreadCount > 99 ? '99+' : unreadCount}
+                                    </span>
+                                )}
                             </button>
 
                             {showNotifications && (
-                                <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden z-50">
-                                    <div className="px-4 py-3 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                                        <h3 className="text-sm font-semibold text-slate-800">Notifications</h3>
-                                        <span className="text-xs text-slate-500">{unreadCount} Unread</span>
+                                <div className="absolute right-0 mt-3 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200/90 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                                    {/* Header */}
+                                    <div className="px-4 py-3.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/90 backdrop-blur-sm">
+                                        <div className="flex items-center gap-2">
+                                            <h3 className="text-sm font-bold text-slate-800 tracking-tight">Notifications</h3>
+                                            {unreadCount > 0 ? (
+                                                <span className="px-2 py-0.5 text-[11px] font-semibold bg-rose-100 text-rose-700 rounded-full">
+                                                    {unreadCount} new
+                                                </span>
+                                            ) : (
+                                                <span className="px-2 py-0.5 text-[11px] font-semibold bg-slate-100 text-slate-600 rounded-full">
+                                                    0 unread
+                                                </span>
+                                            )}
+                                        </div>
+                                        {unreadCount > 0 && (
+                                            <button 
+                                                onClick={handleMarkAllAsRead}
+                                                className="text-xs font-medium text-teal-600 hover:text-teal-700 hover:underline flex items-center gap-1 cursor-pointer transition-colors"
+                                            >
+                                                <CheckCheck className="h-3.5 w-3.5" />
+                                                Mark all read
+                                            </button>
+                                        )}
                                     </div>
-                                    <div className="max-h-80 overflow-y-auto">
+
+                                    {/* Notification list */}
+                                    <div className="max-h-[380px] overflow-y-auto divide-y divide-slate-100/80">
                                         {notifications.length === 0 ? (
-                                            <p className="p-4 text-center text-sm text-slate-500">No notifications.</p>
-                                        ) : notifications.map(notif => (
-                                            <div key={notif.id} className={`p-4 border-b border-slate-50 transition-colors ${!notif.is_read ? 'bg-blue-50/50' : ''}`}>
-                                                <div className="flex justify-between items-start mb-1">
-                                                    <h4 className="text-sm font-semibold text-slate-800">{notif.title}</h4>
-                                                    <span className="text-[10px] text-slate-400">{new Date(notif.created_at).toLocaleDateString()}</span>
+                                            <div className="p-8 text-center">
+                                                <div className="mx-auto w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-2">
+                                                    <Bell className="h-5 w-5" />
                                                 </div>
-                                                <p className="text-xs text-slate-600 mb-2">{notif.message}</p>
-                                                {!notif.is_read && (
-                                                    <button onClick={() => handleMarkAsRead(notif.id)} className="text-[10px] font-medium text-teal-600 hover:text-teal-700">Mark as read</button>
-                                                )}
+                                                <p className="text-sm font-medium text-slate-600">No notifications yet</p>
+                                                <p className="text-xs text-slate-400 mt-0.5">We'll alert you when equipment is added or updates occur.</p>
                                             </div>
-                                        ))}
+                                        ) : (
+                                            notifications.map(notif => {
+                                                const isUnread = !notif.is_read;
+                                                return (
+                                                    <div 
+                                                        key={notif.id} 
+                                                        className={`p-3.5 flex gap-3 transition-colors ${
+                                                            isUnread ? 'bg-teal-50/35 hover:bg-teal-50/60' : 'bg-white hover:bg-slate-50/80'
+                                                        }`}
+                                                    >
+                                                        {getNotificationIcon(notif)}
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="flex items-center justify-between gap-2 mb-1">
+                                                                <div className="flex items-center gap-1.5 truncate">
+                                                                    {isUnread && (
+                                                                        <span className="h-2 w-2 rounded-full bg-teal-500 shrink-0"></span>
+                                                                    )}
+                                                                    <h4 className={`text-xs font-semibold truncate ${isUnread ? 'text-slate-900' : 'text-slate-700'}`}>
+                                                                        {notif.title}
+                                                                    </h4>
+                                                                </div>
+                                                                <span className="text-[10px] text-slate-400 shrink-0 font-medium">
+                                                                    {getRelativeTime(notif.createdAt || notif.created_at)}
+                                                                </span>
+                                                            </div>
+                                                            <p className="text-xs text-slate-600 leading-relaxed line-clamp-2 mb-1.5">
+                                                                {notif.message}
+                                                            </p>
+                                                            {isUnread && (
+                                                                <div className="flex justify-end">
+                                                                    <button 
+                                                                        onClick={(e) => handleMarkAsRead(notif.id, e)} 
+                                                                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-teal-600 hover:text-teal-800 hover:bg-teal-100/70 px-2 py-0.5 rounded transition-all cursor-pointer"
+                                                                    >
+                                                                        <Check className="h-3 w-3 stroke-[2.5]" />
+                                                                        Mark as read
+                                                                    </button>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })
+                                        )}
+                                    </div>
+
+                                    {/* Footer */}
+                                    <div className="p-2.5 bg-slate-50 border-t border-slate-100 text-center">
+                                        <Link 
+                                            to={`${basePath}/notifications`} 
+                                            onClick={() => setShowNotifications(false)}
+                                            className="inline-flex items-center justify-center text-xs font-semibold text-teal-600 hover:text-teal-700 transition-colors cursor-pointer w-full py-1"
+                                        >
+                                            View all in Notifications Center &rarr;
+                                        </Link>
                                     </div>
                                 </div>
                             )}

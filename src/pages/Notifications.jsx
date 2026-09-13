@@ -34,6 +34,7 @@ export default function Notifications() {
         try {
             setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
             await api.put(`/notifications/${id}/read`);
+            window.dispatchEvent(new CustomEvent('notification-refresh'));
         } catch (error) {
             console.error('Failed to mark as read:', error);
         }
@@ -43,6 +44,7 @@ export default function Notifications() {
         try {
             setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
             await api.put('/notifications/mark-all-read');
+            window.dispatchEvent(new CustomEvent('notification-refresh'));
         } catch (error) {
             console.error('Failed to mark all read:', error);
         }
@@ -52,6 +54,7 @@ export default function Notifications() {
         try {
             setNotifications(prev => prev.filter(n => n.id !== id));
             await api.delete(`/notifications/${id}`);
+            window.dispatchEvent(new CustomEvent('notification-refresh'));
         } catch (error) {
             console.error('Failed to delete notification:', error);
         }
@@ -167,7 +170,7 @@ export default function Notifications() {
                                                     <span className="w-2 h-2 rounded-full bg-rose-500 flex-shrink-0"></span>
                                                 )}
                                                 <span className="text-xs text-slate-400">
-                                                    {getRelativeTime(notif.created_at)}
+                                                    {getRelativeTime(notif.createdAt || notif.created_at)}
                                                 </span>
                                             </div>
                                             <h4 className={`text-sm font-semibold ${notif.is_read ? 'text-slate-700' : 'text-slate-900'}`}>
@@ -179,7 +182,7 @@ export default function Notifications() {
                                         </div>
                                         <button
                                             onClick={() => handleDismiss(notif.id)}
-                                            className="flex-shrink-0 text-slate-300 hover:text-slate-500 p-1 rounded-md hover:bg-slate-100 opacity-0 group-hover:opacity-100 transition-opacity"
+                                            className="flex-shrink-0 text-slate-300 hover:text-slate-500 p-1 rounded-md hover:bg-slate-100 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                                             title="Dismiss">
                                             <X className="h-4 w-4" />
                                         </button>
@@ -188,7 +191,7 @@ export default function Notifications() {
                                     {!notif.is_read && (
                                         <div className="mt-3">
                                             <button onClick={() => handleMarkAsRead(notif.id)}
-                                                className="text-xs font-medium text-teal-600 hover:text-teal-700 hover:underline">
+                                                className="text-xs font-medium text-teal-600 hover:text-teal-700 hover:underline cursor-pointer">
                                                 Mark as read
                                             </button>
                                         </div>
