@@ -19,7 +19,8 @@ export default function UserManagement() {
         try {
             setLoading(true);
             const { data } = await api.get('/users');
-            if (data) setUsers(data);
+            if (data?.success) setUsers(data.data || []);
+            else if (Array.isArray(data)) setUsers(data);
         } catch (error) {
             console.warn("Backend unavailable, using localStorage demo data");
             const demoUsers = JSON.parse(localStorage.getItem('demo_users') || '[]');

@@ -13,7 +13,9 @@ export default function Notifications() {
         try {
             setLoading(true);
             const { data } = await api.get('/notifications');
-            if (Array.isArray(data)) {
+            if (data?.success) {
+                setNotifications(data.data || []);
+            } else if (Array.isArray(data)) {
                 setNotifications(data);
             }
         } catch (error) {

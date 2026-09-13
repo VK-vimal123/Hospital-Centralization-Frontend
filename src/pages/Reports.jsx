@@ -19,7 +19,8 @@ export default function Reports() {
             try {
                 setLoading(true);
                 const { data } = await api.get('/cycles');
-                if (data) setCycles(data);
+                if (data?.success) setCycles(data.data || []);
+                else if (Array.isArray(data)) setCycles(data);
             } catch (error) {
                 console.error("Failed to fetch report data", error);
             } finally {
