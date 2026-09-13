@@ -27,26 +27,14 @@ export default function EquipmentDetails() {
                     setCycles(cyclesRes.data.data.filter(c => c.equipment_id.toString() === id));
                 }
 
-                // If maintenance API doesn't exist yet, we'll mock it
-                setMaintenance([
-                    { id: 1, date: '2024-01-15', technician: 'Mike T.', type: 'Calibration', status: 'Completed', next_due: '2024-07-15' },
-                    { id: 2, date: '2023-07-10', technician: 'Sarah J.', type: 'Filter Replacement', status: 'Completed', next_due: '2024-01-10' }
-                ]);
+                const maintRes = await api.get('/maintenance').catch(() => ({ data: [] }));
+                if (maintRes.data) {
+                    const allMaint = maintRes.data.data || maintRes.data || [];
+                    setMaintenance(allMaint.filter(m => m.equipment_id?.toString() === id));
+                }
 
             } catch (error) {
-                console.error("Failed to fetch equipment details, using demo data");
-                const demoEq = localStorage.getItem('demo_equipment');
-                if (demoEq) {
-                    const parsedEq = JSON.parse(demoEq);
-                    const eq = parsedEq.find(e => e.id.toString() === id);
-                    if (eq) setEquipment(eq);
-                }
-                
-                // Set some demo mock cycles just so the page doesn't break
-                setCycles([
-                    { id: 101, created_at: '2024-02-15T10:00:00Z', batch_number: 'B-101', operator_name: 'John D.', temperature_c: 134, pressure_psi: 30, duration_mins: 45, result: 'PASS' },
-                    { id: 102, created_at: '2024-02-14T14:30:00Z', batch_number: 'B-100', operator_name: 'Sarah J.', temperature_c: 134, pressure_psi: 30, duration_mins: 45, result: 'PASS' }
-                ]);
+                console.error("Failed to fetch equipment details", error);
             } finally {
                 setLoading(false);
             }
@@ -215,17 +203,23 @@ export default function EquipmentDetails() {
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-slate-100">
-                            {maintenance.map((m) => (
+                            {maintenance.length > 0 ? maintenance.map((m) => (
                                 <tr key={m.id}>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900">{m.date}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{m.technician}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{m.type}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900">{new Date(m.service_date).toLocaleDateString()}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{m.technician_name}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{m.maintenance_type}</td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <span className="inline-flex items-center text-xs font-medium text-slate-700 bg-slate-100 border border-slate-200 px-2 py-1 rounded-md">{m.status}</span>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-700">{m.next_due}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-700">{m.next_due_date ? new Date(m.next_due_date).toLocaleDateString() : 'N/A'}</td>
                                 </tr>
-                            ))}
+                            )) : (
+                                <tr>
+                                    <td colSpan="5" className="px-6 py-10 text-center text-sm text-slate-500">
+                                        No maintenance records for this equipment yet.
+                                    </td>
+                                </tr>
+                            )}
                         </tbody>
                     </table>
                 </div>

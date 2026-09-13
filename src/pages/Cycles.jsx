@@ -28,56 +28,17 @@ export default function Cycles() {
             ]);
             
             if (cyclesRes.data?.success) setCycles(cyclesRes.data.data);
-            else {
-                const demoCycles = localStorage.getItem('demo_cycles');
-                setCycles(demoCycles ? JSON.parse(demoCycles) : []);
-            }
+            else setCycles([]);
 
-            const seedEquipment = [
-                { id: 'EQ-STM-101', name: 'Steam Autoclave Unit 1 - Pre-Vacuum', category: 'Steam' },
-                { id: 'EQ-STM-102', name: 'Steam Autoclave Unit 2 - Gravity', category: 'Steam' },
-                { id: 'EQ-PLS-201', name: 'Hydrogen Peroxide Plasma Sterilizer', category: 'Plasma' },
-                { id: 'EQ-ETO-301', name: 'Ethylene Oxide (EtO) Chamber', category: 'EtO' },
-                { id: 'EQ-WSH-401', name: 'Surgical Instrument Washer-Disinfector', category: 'Washer' },
-                { id: 'EQ-DRY-501', name: 'Dry Heat Rapid Sterilizer', category: 'Dry Heat' }
-            ];
-
-            let loadedEq = [];
-            if (eqRes.data?.data && eqRes.data.data.length > 0) {
-                loadedEq = eqRes.data.data;
-            } else {
-                const demoEq = localStorage.getItem('demo_equipment');
-                if (demoEq) {
-                    loadedEq = JSON.parse(demoEq);
-                } else {
-                    loadedEq = seedEquipment;
-                    localStorage.setItem('demo_equipment', JSON.stringify(seedEquipment));
-                }
-            }
-            // Ensure seed equipment is merged if not present, for robustness
-            const finalEq = [...loadedEq];
-            seedEquipment.forEach(seed => {
-                if (!finalEq.find(e => e.id === seed.id)) {
-                    finalEq.push(seed);
-                }
-            });
-            setEquipmentList(finalEq);
-            
-            const seedProfiles = [
-                { id: 'P-STM-1', name: '134°C Pre-Vac 4 min', category: 'Steam', temperature: 134, pressure: 30, duration: 4 },
-                { id: 'P-STM-2', name: '121°C Gravity 30 min', category: 'Steam', temperature: 121, pressure: 15, duration: 30 },
-                { id: 'P-PLS-1', name: 'Standard H2O2 Plasma 45 min', category: 'Plasma', temperature: 50, pressure: 0, duration: 45 },
-                { id: 'P-ETO-1', name: 'Standard EtO 12 hours', category: 'EtO', temperature: 55, pressure: 0, duration: 720 },
-                { id: 'P-WSH-1', name: 'Standard Wash & Disinfect 45 min', category: 'Washer', temperature: 90, pressure: 0, duration: 45 },
-                { id: 'P-DRY-1', name: '160°C Dry Heat 2 hours', category: 'Dry Heat', temperature: 160, pressure: 0, duration: 120 }
-            ];
+            if (eqRes.data?.data) setEquipmentList(eqRes.data.data);
+            else setEquipmentList([]);
 
             if (profilesRes.data?.data && Array.isArray(profilesRes.data.data)) {
                 setProfiles(profilesRes.data.data);
             } else if (profilesRes.data && Array.isArray(profilesRes.data)) {
                 setProfiles(profilesRes.data);
             } else {
-                setProfiles(seedProfiles);
+                setProfiles([]);
             }
         } catch (error) {
             console.error("Failed to fetch data", error);
@@ -115,35 +76,9 @@ export default function Cycles() {
                 return;
             }
         } catch (error) {
-            console.error('Failed to record cycle via API, falling back to demo mode:', error);
+            console.error('Failed to record cycle via API', error);
+            alert('Failed to record cycle. Please try again.');
         }
-
-        // DEMO MODE FALLBACK
-        const isPass = formData.chemical_indicator === 'PASS' && formData.biological_indicator !== 'FAIL' && parseFloat(formData.temperature) >= 134;
-        
-        const newCycle = {
-            id: Date.now(),
-            ...formData,
-            equipment_name: equipmentList.find(eq => eq.id.toString() === formData.equipment_id)?.name || 'Unknown Equipment',
-            operator_name: 'Demo Staff',
-            result: isPass ? 'PASS' : 'FAIL',
-            failure_reason: isPass ? null : 'Parameters out of validated bounds (Demo Engine)',
-            cycle_type: formData.cycle_type || 'Standard',
-            created_at: new Date().toISOString()
-        };
-
-        setCycles(prev => {
-            const newList = [newCycle, ...prev];
-            localStorage.setItem('demo_cycles', JSON.stringify(newList));
-            return newList;
-        });
-        setIsAddModalOpen(false);
-        setFormData({
-            equipment_id: '', profile_id: '', batch_number: '', cycle_type: '',
-            start_time: '', end_time: '', temperature: '', pressure: '', duration: '',
-            chemical_indicator: 'PASS', biological_indicator: 'PASS', notes: ''
-        });
-        alert(`Cycle Recorded! Result: ${newCycle.result}${newCycle.failure_reason ? `\nReason: ${newCycle.failure_reason}` : ''} (Demo Mode)`);
     };
 
     const filteredCycles = cycles.filter(c => {
@@ -323,14 +258,17 @@ export default function Cycles() {
                                                 setFormData({...formData, equipment_id: e.target.value, profile_id: '', temperature: '', pressure: '', duration: ''});
                                             }}>
                                             <option value="">Select Equipment...</option>
-                                            {equipmentList.map(eq => <option key={eq.id} value={eq.id}>{eq.name} ({String(eq.id).startsWith('EQ-') ? eq.id : `EQ-${String(eq.id).padStart(3,'0')}`})</option>)}
+                                            {equipmentList.map(eq => {
+                                                const eqId = eq._id || eq.id;
+                                                return <option key={eqId} value={eqId}>{eq.name} ({String(eqId).startsWith('EQ-') ? eqId : `EQ-${String(eqId).padStart(3,'0')}`})</option>;
+                                            })}
                                         </select>
                                     </div>
                                     <div>
                                         <label className="block text-xs font-medium text-slate-700 mb-1">Cycle Profile</label>
                                         <select required className="w-full border border-slate-300 rounded-md px-2.5 py-1.5 text-sm focus:ring-1 focus:ring-teal-500 outline-none" 
                                             value={formData.profile_id} onChange={(e) => {
-                                                const selectedProfile = profiles.find(p => p.id.toString() === e.target.value);
+                                                const selectedProfile = profiles.find(p => (p._id || p.id).toString() === e.target.value);
                                                 setFormData({
                                                     ...formData, 
                                                     profile_id: e.target.value,
@@ -346,7 +284,7 @@ export default function Cycles() {
                                             <option value="">Select Validated Protocol...</option>
                                             {profiles
                                                 .filter(p => {
-                                                    const eq = equipmentList.find(e => e.id.toString() === formData.equipment_id);
+                                                    const eq = equipmentList.find(e => (e._id || e.id).toString() === formData.equipment_id);
                                                     if (!eq) return true;
                                                     
                                                     const eqName = eq.name.toLowerCase();
@@ -362,7 +300,7 @@ export default function Cycles() {
                                                     
                                                     return false;
                                                 })
-                                                .map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                                .map(p => <option key={p._id || p.id} value={p._id || p.id}>{p.name}</option>)}
                                         </select>
                                     </div>
                                 </div>

@@ -24,20 +24,12 @@ export default function Maintenance() {
             let fetchedSchedules = maintRes.data?.data || maintRes.data || [];
             let fetchedEquipment = eqRes.data?.data || [];
 
-            // If empty (because API is down and returned our catch fallbacks), use localStorage
-            if (fetchedSchedules.length === 0) {
-                console.warn("Backend unavailable, loading maintenance from localStorage");
-                fetchedSchedules = JSON.parse(localStorage.getItem('demo_maintenance') || '[]');
-            }
-            if (fetchedEquipment.length === 0) {
-                console.warn("Backend unavailable, loading equipment from localStorage");
-                fetchedEquipment = JSON.parse(localStorage.getItem('demo_equipment') || '[]');
-            }
-
             setSchedules(fetchedSchedules);
             setEquipmentList(fetchedEquipment);
         } catch (error) {
             console.error("Failed to fetch maintenance data");
+            setSchedules([]);
+            setEquipmentList([]);
         } finally {
             setLoading(false);
         }
@@ -60,24 +52,7 @@ export default function Maintenance() {
                 });
             }
         } catch (error) {
-            console.warn("Backend unavailable, saving maintenance to localStorage demo data");
-            const demoMaint = JSON.parse(localStorage.getItem('demo_maintenance') || '[]');
-            const selectedEq = equipmentList.find(eq => eq.id == formData.equipment_id) || {};
-            const newSchedule = {
-                id: Date.now(),
-                ...formData,
-                equipment_name: selectedEq.name || 'Unknown Equipment',
-                technician_name: 'Demo Technician',
-                created_at: new Date().toISOString()
-            };
-            demoMaint.push(newSchedule);
-            localStorage.setItem('demo_maintenance', JSON.stringify(demoMaint));
-            setIsAddModalOpen(false);
-            setFormData({
-                equipment_id: '', maintenance_type: 'Preventive', service_date: '', 
-                description: '', parts_replaced: '', next_due_date: '', status: 'Scheduled'
-            });
-            fetchData();
+            console.error("Failed to schedule maintenance", error);
         }
     };
 
@@ -86,11 +61,7 @@ export default function Maintenance() {
             await api.put(`/maintenance/${id}`, { status: 'Completed' });
             fetchData();
         } catch (error) {
-            console.warn("Backend unavailable, updating maintenance in localStorage demo data");
-            const demoMaint = JSON.parse(localStorage.getItem('demo_maintenance') || '[]');
-            const updated = demoMaint.map(m => m.id === id ? { ...m, status: 'Completed' } : m);
-            localStorage.setItem('demo_maintenance', JSON.stringify(updated));
-            fetchData();
+            console.error("Failed to mark complete", error);
         }
     };
 

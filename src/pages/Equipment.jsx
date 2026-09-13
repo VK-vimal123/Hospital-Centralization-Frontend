@@ -187,7 +187,7 @@ export default function Equipment() {
                     </div>
                     <div className="flex items-center gap-1.5 flex-wrap">
                         <Filter className="h-3.5 w-3.5 text-slate-400" />
-                        {['All', 'Active', 'Under Maintenance', 'Out of Service'].map(s => (
+                        {['All', 'Active', 'In-Use', 'Under Maintenance', 'Out of Service'].map(s => (
                             <button key={s} onClick={() => setStatusFilter(s)}
                                 className={`px-2 py-1 text-[10px] font-medium rounded-full transition-all border ${statusFilter === s
                                     ? 'bg-teal-600 text-white border-teal-600'

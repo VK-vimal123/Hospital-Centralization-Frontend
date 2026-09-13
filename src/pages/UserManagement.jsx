@@ -22,9 +22,8 @@ export default function UserManagement() {
             if (data?.success) setUsers(data.data || []);
             else if (Array.isArray(data)) setUsers(data);
         } catch (error) {
-            console.warn("Backend unavailable, using localStorage demo data");
-            const demoUsers = JSON.parse(localStorage.getItem('demo_users') || '[]');
-            setUsers(demoUsers);
+            console.error("Failed to fetch users", error);
+            setUsers([]);
         } finally {
             setLoading(false);
         }
@@ -41,19 +40,7 @@ export default function UserManagement() {
             setShowModal(false);
             fetchUsers();
         } catch (error) {
-            console.warn("Backend unavailable, saving user to localStorage demo data");
-            const demoUsers = JSON.parse(localStorage.getItem('demo_users') || '[]');
-            const newUser = {
-                id: Date.now(),
-                full_name: formData.full_name,
-                email: formData.email,
-                role: formData.role,
-                created_at: new Date().toISOString()
-            };
-            demoUsers.push(newUser);
-            localStorage.setItem('demo_users', JSON.stringify(demoUsers));
-            setShowModal(false);
-            fetchUsers();
+            console.error("Failed to create user", error);
         }
     };
 
