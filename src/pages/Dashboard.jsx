@@ -31,8 +31,8 @@ export default function Dashboard() {
                 api.get('/dashboard/recent-notifications').catch(() => ({ data: null })),
             ]);
 
-            if (summaryRes.data?.success) setSummary(summaryRes.data);
-            if (Array.isArray(cyclesRes.data)) setRecentCycles(cyclesRes.data);
+            if (summaryRes.data?.success) setSummary(summaryRes.data.data);
+            if (cyclesRes.data?.success) setRecentCycles(cyclesRes.data.data || []);
             if (monthlyRes.data?.success) setMonthlyData(monthlyRes.data.data || []);
             if (usageRes.data?.success) setEquipmentUsage(usageRes.data.data || []);
             if (statusRes.data?.success) setEquipmentStatus(statusRes.data.data || []);
